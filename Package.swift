@@ -18,5 +18,9 @@ let package = Package(
             name: "StorageCoreTests",
             dependencies: ["StorageCore"]
         ),
+        .testTarget(
+            name: "StorageOptimizerTests",
+            dependencies: ["StorageOptimizer", "StorageCore"]
+        ),
     ]
 )
