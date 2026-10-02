@@ -67,7 +67,7 @@ final class CacheCleanerModel {
                     }
                 }
                 for await (id, size) in group {
-                    await self.updateSize(id: id, size: size)
+                    self.updateSize(id: id, size: size)
                 }
             }
             self.isRefreshing = false
