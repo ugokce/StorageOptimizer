@@ -21,6 +21,9 @@ struct ContentView: View {
             }
             .navigationSplitViewColumnWidth(min: 190, ideal: 210)
         } detail: {
+            // Both frames set a minimum of zero so no child can raise the window's minimum size,
+            // and are anchored top-leading so anything too big overflows down and to the right, never
+            // under the toolbar or the sidebar.
             VStack(spacing: 0) {
                 if !appState.hasFullDiskAccess {
                     FullDiskAccessBanner()
@@ -29,8 +32,9 @@ struct ContentView: View {
                     ScanStatusBar()
                 }
                 detailView
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity, alignment: .topLeading)
             }
+            .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity, alignment: .topLeading)
         }
         .toolbar {
             ToolbarItem(placement: .navigation) {

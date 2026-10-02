@@ -45,32 +45,56 @@ struct LargeFilesView: View {
         .searchable(text: $searchText, prompt: "Filter by name or folder")
     }
 
+    /// One row when the window is wide enough, two rows otherwise.
     private var filterBar: some View {
-        HStack(spacing: 16) {
-            Picker("Size", selection: $minimumSize) {
-                ForEach(SizeFilter.allCases) { filter in
-                    Text(filter.title).tag(filter)
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 16) {
+                sizePicker
+                typePicker
+                notOpenedToggle
+                Spacer(minLength: 0)
+            }
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    sizePicker
+                    Spacer(minLength: 0)
+                }
+                HStack(spacing: 16) {
+                    typePicker
+                    notOpenedToggle
+                    Spacer(minLength: 0)
                 }
             }
-            .pickerStyle(.segmented)
-            .fixedSize()
-
-            Picker("Type", selection: $category) {
-                Text("All Types").tag(FileCategory?.none)
-                Divider()
-                ForEach(FileCategory.allCases) { category in
-                    Label(category.displayName, systemImage: category.systemImage)
-                        .tag(FileCategory?.some(category))
-                }
-            }
-            .fixedSize()
-
-            Toggle("Not opened in 6 months", isOn: $onlyNotOpenedRecently)
-
-            Spacer()
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
+    }
+
+    private var sizePicker: some View {
+        Picker("Size", selection: $minimumSize) {
+            ForEach(SizeFilter.allCases) { filter in
+                Text(filter.title).tag(filter)
+            }
+        }
+        .pickerStyle(.segmented)
+        .fixedSize()
+    }
+
+    private var typePicker: some View {
+        Picker("Type", selection: $category) {
+            Text("All Types").tag(FileCategory?.none)
+            Divider()
+            ForEach(FileCategory.allCases) { category in
+                Label(category.displayName, systemImage: category.systemImage)
+                    .tag(FileCategory?.some(category))
+            }
+        }
+        .fixedSize()
+    }
+
+    private var notOpenedToggle: some View {
+        Toggle("Not opened in 6 months", isOn: $onlyNotOpenedRecently)
+            .fixedSize()
     }
 
     private func filtered(_ files: [FileEntry]) -> [FileEntry] {

@@ -16,7 +16,7 @@ final class LayoutTests: XCTestCase {
 
     func testCacheCleanerHasBoundedMinimumHeightWhenNarrow() {
         let host = NSHostingController(rootView: CacheCleanerView().environment(AppState()))
-        let size = host.sizeThatFits(in: CGSize(width: 360, height: 0))
+        let size = host.sizeThatFits(in: CGSize(width: 220, height: 0))
         XCTAssertLessThan(size.height, 600, "Cache Cleaner minimum height at a narrow width: \(size.height)")
     }
 }

@@ -13,9 +13,9 @@ struct FileTypesView: View {
                 let summaries = result.categorySummaries
                 HSplitView {
                     categoryList(summaries: summaries, total: result.totalSize)
-                        .frame(minWidth: 260, idealWidth: 300, maxWidth: 380)
+                        .frame(minWidth: 220, idealWidth: 300, maxWidth: 380)
                     detail(result: result, category: selectedCategory ?? summaries.first?.category)
-                        .frame(minWidth: 480)
+                        .frame(minWidth: 360)
                 }
             } else {
                 EmptyScanView()

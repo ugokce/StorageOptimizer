@@ -85,8 +85,10 @@ struct FileEntryTable: View {
         HStack(spacing: 12) {
             Text("\(entries.count.formatted()) items, \(ByteFormatting.string(totalSize))")
                 .foregroundStyle(.secondary)
+                .lineLimit(1)
             if !selectedURLs.isEmpty {
                 Text("\(selectedURLs.count.formatted()) selected, \(ByteFormatting.string(selectedSize))")
+                    .lineLimit(1)
             }
             Spacer()
             Button("Show in Finder") {
