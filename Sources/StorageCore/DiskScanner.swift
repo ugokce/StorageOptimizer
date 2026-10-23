@@ -30,9 +30,11 @@ public struct ScanOptions: Sendable {
     }
 
     /// Paths to skip when scanning `/`: other volumes, device files and system mirrors
-    /// that would otherwise be counted twice.
+    /// that would otherwise be counted twice. `/.nofollow`, `/.resolve` and `/.vol` are
+    /// virtual folders that expose the whole disk again under another path.
     public static let entireDiskSkipPaths: Set<String> = [
         "/dev", "/net", "/home", "/Volumes", "/System/Volumes", "/private/var/vm", "/cores",
+        "/.nofollow", "/.resolve", "/.vol",
     ]
 }
 

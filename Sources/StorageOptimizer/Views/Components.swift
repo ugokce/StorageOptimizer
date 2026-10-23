@@ -198,15 +198,20 @@ struct FullDiskAccessBanner: View {
             Image(systemName: "lock.shield")
                 .font(.title2)
                 .foregroundStyle(.orange)
+            // This bar sits outside any scroll view, so its text must truncate rather than grow:
+            // text that never truncates gets very tall at narrow widths and pushes the whole
+            // window content up behind the toolbar.
             VStack(alignment: .leading, spacing: 2) {
                 Text("Full Disk Access is off")
                     .font(.headline)
+                    .lineLimit(1)
                 Text("Some folders, such as Mail, Messages and other apps' data, can't be measured or cleaned. Turn on Full Disk Access for Storage Optimizer (or for Terminal when using swift run), then reopen the app.")
                     .font(.callout)
                     .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                    .lineLimit(3)
             }
-            Spacer()
+            .layoutPriority(1)
+            Spacer(minLength: 0)
             Button("Open Settings") {
                 FullDiskAccess.openSettings()
             }

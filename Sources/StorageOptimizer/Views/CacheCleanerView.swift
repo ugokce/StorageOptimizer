@@ -58,28 +58,33 @@ struct CacheCleanerView: View {
 
     private var header: some View {
         let model = appState.cacheModel
-        return HStack(alignment: .top, spacing: 12) {
+        // Text above the buttons, truncating rather than growing, so the header stays short
+        // at any window width (see FullDiskAccessBanner).
+        return VStack(alignment: .leading, spacing: 10) {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Caches are rebuilt automatically when apps and tools need them.")
                     .font(.headline)
+                    .lineLimit(1)
                 Text("Cleaning deletes them permanently, so the space is freed right away. Items marked Review First may hold something you want to keep.")
                     .font(.callout)
                     .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                    .lineLimit(2)
             }
-            Spacer()
-            Button("Select Recommended") {
-                model.selectRecommended()
+            HStack(spacing: 8) {
+                Button("Select Recommended") {
+                    model.selectRecommended()
+                }
+                Button("Deselect All") {
+                    model.deselectAll()
+                }
+                Button {
+                    model.refresh()
+                } label: {
+                    Label("Refresh", systemImage: "arrow.clockwise")
+                }
+                .disabled(model.isRefreshing || model.isCleaning)
+                Spacer(minLength: 0)
             }
-            Button("Deselect All") {
-                model.deselectAll()
-            }
-            Button {
-                model.refresh()
-            } label: {
-                Label("Refresh", systemImage: "arrow.clockwise")
-            }
-            .disabled(model.isRefreshing || model.isCleaning)
         }
         .padding(16)
     }

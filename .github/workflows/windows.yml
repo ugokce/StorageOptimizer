@@ -1,0 +1,78 @@
+name: Windows
+
+on:
+  push:
+    branches: [main, "claude/**"]
+    paths: ["windows/**", ".github/workflows/windows.yml"]
+  pull_request:
+    paths: ["windows/**", ".github/workflows/windows.yml"]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Test, publish and smoke test
+    runs-on: windows-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: pwsh
+        working-directory: windows
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Show toolchain
+        run: dotnet --version
+
+      - name: Test
+        run: dotnet test tests/StorageOptimizer.Core.Tests -c Release
+
+      - name: Publish
+        run: |
+          foreach ($rid in 'win-x64', 'win-arm64') {
+            dotnet publish src/StorageOptimizer.App -c Release -r $rid --self-contained true `
+              -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true `
+              -p:EnableCompressionInSingleFile=true -p:DebugType=None -o "publish/$rid"
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+
+      - name: Smoke test
+        run: |
+          $output = Join-Path $PWD 'smoke'
+          $process = Start-Process -FilePath 'publish/win-x64/StorageOptimizer.exe' -ArgumentList '--smoke-test', "`"$output`"" -PassThru
+          $null = $process.Handle  # keeps the exit code available after the process ends
+          if (-not $process.WaitForExit(300000)) {
+            $process.Kill()
+            Write-Error 'The smoke test did not finish within 5 minutes.'
+            exit 1
+          }
+          if (Test-Path "$output/smoke-test.log") { Get-Content "$output/smoke-test.log" } else { Write-Host 'No smoke-test.log was written.' }
+          exit $process.ExitCode
+
+      - name: Package
+        run: |
+          foreach ($rid in 'win-x64', 'win-arm64') {
+            Compress-Archive -Path "publish/$rid/*" -DestinationPath "StorageOptimizer-$rid.zip" -Force
+          }
+
+      - name: Upload app
+        uses: actions/upload-artifact@v4
+        with:
+          name: StorageOptimizer-Windows
+          path: windows/StorageOptimizer-win-*.zip
+          if-no-files-found: error
+
+      - name: Upload smoke test screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-test-screenshots
+          path: windows/smoke/
+          if-no-files-found: ignore

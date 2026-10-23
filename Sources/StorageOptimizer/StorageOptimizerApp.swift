@@ -10,8 +10,10 @@ struct StorageOptimizerApp: App {
         WindowGroup("Storage Optimizer") {
             ContentView()
                 .environment(appState)
-                .frame(minWidth: 980, minHeight: 620)
+                .frame(minWidth: 820, minHeight: 520)
         }
+        .defaultSize(width: 1240, height: 820)
+        .windowResizability(.contentMinSize)
         .commands {
             CommandGroup(after: .newItem) {
                 Button("Scan Again") {

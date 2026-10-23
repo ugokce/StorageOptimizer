@@ -3,7 +3,10 @@ name: CI
 on:
   push:
     branches: [main, "claude/**"]
+    # Windows-only changes don't need a (10x billed) macOS run.
+    paths-ignore: ["windows/**", ".github/workflows/windows.yml"]
   pull_request:
+    paths-ignore: ["windows/**", ".github/workflows/windows.yml"]
   workflow_dispatch:
 
 concurrency:

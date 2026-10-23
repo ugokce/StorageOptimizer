@@ -144,6 +144,13 @@ final class DiskScannerTests: XCTestCase {
         }
     }
 
+    func testEntireDiskScansSkipMirrorsAndOtherVolumes() {
+        // /.nofollow and /.resolve mirror the whole disk; scanning them counts everything twice.
+        for path in ["/.nofollow", "/.resolve", "/.vol", "/System/Volumes", "/Volumes", "/dev"] {
+            XCTAssertTrue(ScanOptions.entireDiskSkipPaths.contains(path), "\(path) should be skipped")
+        }
+    }
+
     func testScanningAFileThrows() async throws {
         let directory = try makeTemporaryDirectory()
         let file = try directory.makeFile("a.bin", size: 10)

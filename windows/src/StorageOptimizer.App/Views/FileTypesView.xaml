@@ -1,0 +1,85 @@
+<UserControl x:Class="StorageOptimizer.App.Views.FileTypesView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:StorageOptimizer.App.ViewModels"
+             xmlns:views="clr-namespace:StorageOptimizer.App.Views"
+             mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance Type=vm:FileTypesViewModel}">
+    <Grid Margin="20,4,20,16">
+        <TextBlock Text="Scan a folder or drive to see which kinds of files take up space." Style="{StaticResource WrappingSecondaryText}"
+                   Visibility="{Binding HasResult, Converter={StaticResource InverseBoolToVisibility}}" />
+
+        <Grid Visibility="{Binding HasResult, Converter={StaticResource BoolToVisibility}}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="280" MinWidth="200" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" MinWidth="300" />
+            </Grid.ColumnDefinitions>
+
+            <ListBox Grid.Column="0" ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategory}"
+                     ScrollViewer.HorizontalScrollBarVisibility="Disabled" HorizontalContentAlignment="Stretch"
+                     AutomationProperties.Name="File types">
+                <ListBox.ItemTemplate>
+                    <DataTemplate DataType="{x:Type vm:CategoryRow}">
+                        <Grid Margin="0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="28" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource Glyph}" Text="{Binding Glyph}" Foreground="{Binding Brush}" VerticalAlignment="Top" Margin="0,2,0,0" />
+                            <StackPanel Grid.Column="1">
+                                <DockPanel>
+                                    <TextBlock DockPanel.Dock="Right" Text="{Binding SizeText}" Margin="8,0,0,0" />
+                                    <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                                </DockPanel>
+                                <ProgressBar Minimum="0" Maximum="1" Value="{Binding Fraction, Mode=OneWay}" Height="4" Margin="0,5,0,3"
+                                             Foreground="{Binding Brush}" IsHitTestVisible="False" />
+                                <TextBlock Text="{Binding DetailText}" Style="{StaticResource SecondaryText}" FontSize="12" />
+                            </StackPanel>
+                        </Grid>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+
+            <GridSplitter Grid.Column="1" Width="12" HorizontalAlignment="Center" VerticalAlignment="Stretch"
+                          Background="Transparent" ResizeBehavior="PreviousAndNext" />
+
+            <Grid Grid.Column="2">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                    <TextBlock Style="{StaticResource Glyph}" Text="{Binding SelectedCategory.Glyph}" Foreground="{Binding SelectedCategory.Brush}"
+                               FontSize="18" Margin="0,0,10,0" />
+                    <TextBlock Text="{Binding SelectedCategory.Name}" FontSize="18" FontWeight="SemiBold" />
+                </StackPanel>
+                <ItemsControl Grid.Row="1" ItemsSource="{Binding Extensions}" Margin="0,0,0,8">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type vm:ExtensionChip}">
+                            <Border CornerRadius="6" Padding="10,5" Margin="0,0,8,8"
+                                    Background="{DynamicResource SubtleFillColorSecondaryBrush}"
+                                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1">
+                                <StackPanel>
+                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                                    <TextBlock Style="{StaticResource SecondaryText}" FontSize="12">
+                                        <Run Text="{Binding SizeText, Mode=OneWay}" /><Run Text=" · " /><Run Text="{Binding CountText, Mode=OneWay}" />
+                                    </TextBlock>
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <views:FileListView Grid.Row="2" DataContext="{Binding Files}" />
+            </Grid>
+        </Grid>
+    </Grid>
+</UserControl>

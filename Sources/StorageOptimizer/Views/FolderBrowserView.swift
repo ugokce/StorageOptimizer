@@ -94,8 +94,10 @@ struct FolderBrowserView: View {
         return HStack(spacing: 12) {
             Text("\(current.name): \(ByteFormatting.string(current.size)), \(current.fileCount.formatted()) files")
                 .foregroundStyle(.secondary)
+                .lineLimit(1)
             if !selected.isEmpty {
                 Text("\(selected.count.formatted()) selected, \(ByteFormatting.string(selected.reduce(0) { $0 + $1.size }))")
+                    .lineLimit(1)
             }
             Spacer()
             Button("Show in Finder") {
