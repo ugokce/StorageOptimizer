@@ -26,13 +26,30 @@ jobs:
       - name: Build app
         run: ./scripts/build_app.sh
 
+      # Sparse files on the runner only, so the Cache Cleaner shows typical sizes without using disk space.
+      - name: Add sample caches
+        run: |
+          sample() { mkdir -p "$(dirname "$1")" && mkfile -n "$2" "$1"; }
+          sample ~/Library/Developer/Xcode/DerivedData/PhotoJournal-bqzkvhtxdfeuwagnsijcm/Build/Intermediates.noindex/PhotoJournal.build/Objects.zip 3400m
+          sample ~/Library/Developer/Xcode/DerivedData/PhotoJournal-bqzkvhtxdfeuwagnsijcm/Index.noindex/DataStore/records.db 1800m
+          sample ~/Library/Developer/Xcode/DerivedData/WeatherWidget-ahxtnrqopwlzgsedbfkcyu/Build/Products/Debug-iphonesimulator/WeatherWidget.app.zip 2100m
+          sample ~/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/SwiftUI.swiftmodule.pcm 900m
+          sample "$HOME/Library/Developer/Xcode/iOS DeviceSupport/iPhone16,1 18.3 (22D63)/Symbols/dyld_shared_cache_arm64e" 5400m
+          sample ~/Library/Caches/CocoaPods/Pods/Release/Firebase/Firebase.zip 1200m
+          sample ~/.npm/_cacache/content-v2/sha512/packages.tar 1600m
+          sample ~/.gradle/caches/modules-2/files-2.1/dependencies.jar 2300m
+
       - name: Take screenshots
         run: |
           output="$PWD/screenshots"
           "build/Storage Optimizer.app/Contents/MacOS/StorageOptimizer" --screenshots "$output" &
           pid=$!
-          for _ in $(seq 1 300); do
+          for second in $(seq 1 300); do
             kill -0 "$pid" 2>/dev/null || break
+            # The app can't always bring itself to the front when started from a shell.
+            if [ "$second" -le 40 ]; then
+              osascript -e "tell application \"System Events\" to set frontmost of (first process whose unix id is $pid) to true" >/dev/null 2>&1 || true
+            fi
             sleep 1
           done
           status=0
@@ -72,6 +89,22 @@ jobs:
       - name: Use a 1920x1080 screen
         continue-on-error: true
         run: Set-DisplayResolution -Width 1920 -Height 1080 -Force
+
+      # Sparse files on the runner only, so the Cache Cleaner shows typical sizes without using disk space.
+      - name: Add sample caches
+        run: |
+          function Add-Sample([string] $Path, [long] $Megabytes) {
+            New-Item -ItemType Directory -Force -Path (Split-Path $Path) | Out-Null
+            fsutil file createnew $Path 0 | Out-Null
+            fsutil sparse setflag $Path | Out-Null
+            fsutil file seteof $Path ($Megabytes * 1000000) | Out-Null
+          }
+          Add-Sample "$env:LOCALAPPDATA\Google\Chrome\User Data\Default\Cache\Cache_Data\data_3" 1100
+          Add-Sample "$env:LOCALAPPDATA\Microsoft\Edge\User Data\Default\Cache\Cache_Data\data_3" 640
+          Add-Sample "$env:LOCALAPPDATA\Unity\cache\packages\packages.unity.com\com.unity.render-pipelines.universal.tgz" 2100
+          Add-Sample "$env:LOCALAPPDATA\npm-cache\_cacache\content-v2\sha512\packages.tar" 1300
+          Add-Sample "$env:LOCALAPPDATA\NuGet\v3-cache\packages.nupkg" 800
+          Add-Sample "$env:USERPROFILE\.gradle\caches\modules-2\files-2.1\dependencies.jar" 1900
 
       - name: Publish
         run: |

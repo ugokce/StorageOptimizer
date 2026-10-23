@@ -24,6 +24,8 @@ final class CacheCleanerModel {
     /// Called with the project folders a cleaning run deleted, so the scan result can be updated.
     @ObservationIgnored var onItemsRemoved: (@MainActor ([URL]) -> Void)?
     @ObservationIgnored private var projectArtifacts: [ArtifactDirectory] = []
+    /// Screenshot mode measures logical sizes, so sparse sample caches show their full size.
+    @ObservationIgnored var sizeMode: SizeMode = .allocated
 
     var selectedRows: [Row] { rows.filter(\.isSelected) }
 
@@ -59,7 +61,7 @@ final class CacheCleanerModel {
             self.applyTargets(catalogTargets: catalogTargets, remeasure: true)
 
             let measurable = self.rows.map(\.target).filter { $0.reportsSize && $0.group != .projects }
-            let cleaner = CacheCleaner()
+            let cleaner = CacheCleaner(sizeMode: self.sizeMode)
             await withTaskGroup(of: (String, Int64).self) { group in
                 for target in measurable {
                     group.addTask {

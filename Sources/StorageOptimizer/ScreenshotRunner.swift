@@ -79,8 +79,14 @@ final class ScreenshotRunner {
             ),
             display: true
         )
+        // An inactive window draws its sidebar and title bar dimmed. The Screenshots workflow
+        // brings the app to the front, since it can't always activate itself when started from a shell.
         window.makeKeyAndOrderFront(nil)
-        NSApp.activate()
+        let active = await waitUntil(seconds: 20) {
+            NSApp.activate()
+            return NSApp.isActive
+        }
+        log(active ? "The app is active." : "The app didn't become active; windows look inactive.")
         log("Screen \(Int(screen?.frame.width ?? 0))x\(Int(screen?.frame.height ?? 0)) at \(screen?.backingScaleFactor ?? 1)x, window \(Int(window.frame.width))x\(Int(window.frame.height)).")
 
         let appearances: [(NSAppearance.Name, String)] = [(.aqua, "light"), (.darkAqua, "dark")]
@@ -235,6 +241,7 @@ enum DemoFolder {
 
     private static func populate(_ root: URL) throws {
         let fileManager = FileManager.default
+        var packageDates: [URL: Date] = [:]
         for (index, entry) in entries().enumerated() {
             var url = root.appendingPathComponent(entry.path)
             try fileManager.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
@@ -251,7 +258,27 @@ enum DemoFolder {
             values.contentModificationDate = date
             values.contentAccessDate = date
             try url.setResourceValues(values)
+            if let package = packageRoot(of: entry.path, in: root), packageDates[package] == nil {
+                packageDates[package] = date
+            }
         }
+
+        // Adding files to a package updated its dates, and Large Files lists packages by their own.
+        for (package, date) in packageDates {
+            var url = package
+            var values = URLResourceValues()
+            values.contentModificationDate = date
+            values.contentAccessDate = date
+            try url.setResourceValues(values)
+        }
+    }
+
+    private static func packageRoot(of path: String, in root: URL) -> URL? {
+        let components = path.split(separator: "/")
+        guard let index = components.firstIndex(where: { $0.hasSuffix(".app") || $0.hasSuffix(".photoslibrary") }) else {
+            return nil
+        }
+        return root.appendingPathComponent(components[...index].joined(separator: "/"), isDirectory: true)
     }
 
     private static func entries() -> [Entry] {

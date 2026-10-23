@@ -100,26 +100,31 @@ internal static class WindowCapture
         encoder.Save(stream);
     }
 
-    /// <summary>Whether an image shows real content rather than one flat or mostly black area.</summary>
+    /// <summary>
+    /// Whether an image shows real content. A failed capture is black or one flat color; a real page
+    /// can be mostly one background color, so only those two cases are rejected.
+    /// </summary>
     private static bool HasDetail(BitmapSource image)
     {
         var colors = new HashSet<int>();
         var black = 0;
+        var samples = 0;
         var pixel = new byte[4];
-        for (var row = 0; row < 16; row++)
+        for (var row = 0; row < 32; row++)
         {
-            for (var column = 0; column < 16; column++)
+            for (var column = 0; column < 32; column++)
             {
-                var x = image.PixelWidth * (2 * column + 1) / 32;
-                var y = image.PixelHeight * (2 * row + 1) / 32;
+                var x = image.PixelWidth * (2 * column + 1) / 64;
+                var y = image.PixelHeight * (2 * row + 1) / 64;
                 image.CopyPixels(new Int32Rect(x, y, 1, 1), pixel, 4, 0);
-                colors.Add(pixel[0] >> 3 | (pixel[1] >> 3) << 5 | (pixel[2] >> 3) << 10);
+                colors.Add(pixel[0] | pixel[1] << 8 | pixel[2] << 16);
                 if (pixel[0] + pixel[1] + pixel[2] < 24)
                 {
                     black++;
                 }
+                samples++;
             }
         }
-        return colors.Count >= 8 && black < 128;
+        return colors.Count >= 3 && black < samples / 2;
     }
 }

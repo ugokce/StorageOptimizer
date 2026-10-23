@@ -23,7 +23,7 @@
                     </DockPanel>
 
                     <Border Height="22" CornerRadius="5" ClipToBounds="True"
-                            Background="{DynamicResource ControlStrongFillColorDisabledBrush}">
+                            Background="{DynamicResource ControlAltFillColorQuarternaryBrush}">
                         <ItemsControl ItemsSource="{Binding Segments}">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>

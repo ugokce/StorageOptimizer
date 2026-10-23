@@ -111,9 +111,10 @@ final class AppState {
     }
 
     /// Hides the Full Disk Access banner and counts files at their full length, so the sparse
-    /// files of the screenshot demo folder show realistic sizes.
+    /// files of the screenshot demo folder and sample caches show realistic sizes.
     func prepareForScreenshots() {
         isScreenshotMode = true
+        cacheModel.sizeMode = .logical
         refreshEnvironment()
     }
 
