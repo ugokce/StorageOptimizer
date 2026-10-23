@@ -7,9 +7,18 @@ on:
   pull_request:
     paths: ["windows/**", "!windows/**/*.md", ".github/workflows/windows.yml"]
   workflow_dispatch:
+  # The Release workflow builds the app through this workflow.
+  workflow_call:
+    inputs:
+      version:
+        description: Version written into the app, such as 1.2.0. Empty for development builds.
+        type: string
+        default: ""
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  # When called by another workflow, github.workflow is the caller's name, so "windows" keeps the group apart
+  # from the macOS build that the same caller runs.
+  group: ${{ github.workflow }}-windows-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -35,9 +44,12 @@ jobs:
         run: dotnet test tests/StorageOptimizer.Core.Tests -c Release
 
       - name: Publish
+        env:
+          VERSION: ${{ inputs.version }}
         run: |
+          $versionArgs = if ($env:VERSION) { @("-p:Version=$env:VERSION") } else { @() }
           foreach ($rid in 'win-x64', 'win-arm64') {
-            dotnet publish src/StorageOptimizer.App -c Release -r $rid --self-contained true `
+            dotnet publish src/StorageOptimizer.App -c Release -r $rid --self-contained true @versionArgs `
               -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true `
               -p:EnableCompressionInSingleFile=true -p:DebugType=None -o "publish/$rid"
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
