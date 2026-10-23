@@ -48,9 +48,11 @@ internal sealed class ScreenshotRunner
         };
 
         var demo = Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Demo");
+        var createdDemo = false;
         try
         {
             DemoFolder.Create(demo);
+            createdDemo = true;
             await CapturePagesAsync(demo);
         }
         catch (Exception exception)
@@ -61,7 +63,10 @@ internal sealed class ScreenshotRunner
         {
             try
             {
-                Directory.Delete(demo, recursive: true);
+                if (createdDemo)
+                {
+                    Directory.Delete(demo, recursive: true);
+                }
             }
             catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
             {
@@ -191,12 +196,26 @@ internal sealed class ScreenshotRunner
 /// </summary>
 internal static class DemoFolder
 {
+    /// <summary>Refuses to touch a folder that already exists, since it is deleted again afterwards.</summary>
     public static void Create(string root)
     {
-        if (Directory.Exists(root))
+        if (Path.Exists(root))
+        {
+            throw new IOException($"{root} already exists. Move or rename it, then try again.");
+        }
+        try
+        {
+            Populate(root);
+        }
+        catch when (Directory.Exists(root))
         {
             Directory.Delete(root, recursive: true);
+            throw;
         }
+    }
+
+    private static void Populate(string root)
+    {
         var index = 0;
         foreach (var (relativePath, megabytes, daysAgo) in Entries())
         {

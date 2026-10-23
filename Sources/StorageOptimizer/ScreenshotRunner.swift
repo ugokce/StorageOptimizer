@@ -29,14 +29,18 @@ final class ScreenshotRunner {
 
     func run() async {
         let demo = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Demo", isDirectory: true)
+        var createdDemo = false
         do {
             try FileManager.default.createDirectory(at: outputDirectory, withIntermediateDirectories: true)
             try DemoFolder.create(at: demo)
+            createdDemo = true
             try await capturePages(demo: demo)
         } catch {
             fail("Screenshot run failed: \(error)")
         }
-        try? FileManager.default.removeItem(at: demo)
+        if createdDemo {
+            try? FileManager.default.removeItem(at: demo)
+        }
         finish()
     }
 
@@ -215,9 +219,22 @@ enum DemoFolder {
         var daysAgo: Int? = nil
     }
 
+    /// Refuses to touch a folder that already exists, since it is deleted again afterwards.
     static func create(at root: URL) throws {
         let fileManager = FileManager.default
-        try? fileManager.removeItem(at: root)
+        guard !fileManager.fileExists(atPath: root.path) else {
+            throw CocoaError(.fileWriteFileExists, userInfo: [NSFilePathErrorKey: root.path])
+        }
+        do {
+            try populate(root)
+        } catch {
+            try? fileManager.removeItem(at: root)
+            throw error
+        }
+    }
+
+    private static func populate(_ root: URL) throws {
+        let fileManager = FileManager.default
         for (index, entry) in entries().enumerated() {
             var url = root.appendingPathComponent(entry.path)
             try fileManager.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
