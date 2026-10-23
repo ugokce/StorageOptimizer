@@ -51,11 +51,12 @@
                 <DataGridTemplateColumn Header="Name" Width="2*" MinWidth="160" SortMemberPath="Name" CanUserSort="True">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate DataType="{x:Type vm:FileRow}">
-                            <StackPanel Orientation="Horizontal" ToolTip="{Binding Path}">
-                                <TextBlock Style="{StaticResource Glyph}" Text="{Binding Glyph}" Foreground="{Binding CategoryBrush}"
+                            <!-- A DockPanel limits the name to the column width, so long names end in an ellipsis. -->
+                            <DockPanel ToolTip="{Binding Path}">
+                                <TextBlock DockPanel.Dock="Left" Style="{StaticResource Glyph}" Text="{Binding Glyph}" Foreground="{Binding CategoryBrush}"
                                            FontSize="13" Margin="2,0,8,0" />
                                 <TextBlock Text="{Binding Name}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-                            </StackPanel>
+                            </DockPanel>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
