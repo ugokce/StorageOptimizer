@@ -17,6 +17,11 @@ public partial class App : Application
             Shutdown(await smokeTest.RunAsync());
             return;
         }
+        if (ScreenshotRunner.TryCreate(e.Args) is { } screenshots)
+        {
+            Shutdown(await screenshots.RunAsync());
+            return;
+        }
 
         DispatcherUnhandledException += (_, args) =>
         {

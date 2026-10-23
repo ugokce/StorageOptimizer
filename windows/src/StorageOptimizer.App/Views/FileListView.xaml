@@ -6,6 +6,13 @@
              xmlns:vm="clr-namespace:StorageOptimizer.App.ViewModels"
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance Type=vm:FileListViewModel}">
+    <UserControl.Resources>
+        <!-- Centers text columns on the same line as the Name column's icon and text. -->
+        <Style x:Key="CellText" TargetType="TextBlock">
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+        </Style>
+    </UserControl.Resources>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="*" />
@@ -44,19 +51,20 @@
                 <DataGridTemplateColumn Header="Name" Width="2*" MinWidth="160" SortMemberPath="Name" CanUserSort="True">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate DataType="{x:Type vm:FileRow}">
-                            <StackPanel Orientation="Horizontal" ToolTip="{Binding Path}">
-                                <TextBlock Style="{StaticResource Glyph}" Text="{Binding Glyph}" Foreground="{Binding CategoryBrush}"
+                            <!-- A DockPanel limits the name to the column width, so long names end in an ellipsis. -->
+                            <DockPanel ToolTip="{Binding Path}">
+                                <TextBlock DockPanel.Dock="Left" Style="{StaticResource Glyph}" Text="{Binding Glyph}" Foreground="{Binding CategoryBrush}"
                                            FontSize="13" Margin="2,0,8,0" />
                                 <TextBlock Text="{Binding Name}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-                            </StackPanel>
+                            </DockPanel>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
-                <DataGridTextColumn Header="Size" Binding="{Binding SizeText}" SortMemberPath="Size" Width="90" SortDirection="Descending" />
-                <DataGridTextColumn Header="Type" Binding="{Binding Kind}" Width="100" />
-                <DataGridTextColumn Header="Folder" Binding="{Binding Folder}" Width="3*" MinWidth="140" />
-                <DataGridTextColumn Header="Modified" Binding="{Binding Modified, StringFormat=d, TargetNullValue=—}" SortMemberPath="Modified" Width="100" />
-                <DataGridTextColumn Header="Last opened" Binding="{Binding Accessed, StringFormat=d, TargetNullValue=—}" SortMemberPath="Accessed" Width="100" />
+                <DataGridTextColumn Header="Size" Binding="{Binding SizeText}" SortMemberPath="Size" Width="90" SortDirection="Descending" ElementStyle="{StaticResource CellText}" />
+                <DataGridTextColumn Header="Type" Binding="{Binding Kind}" Width="100" ElementStyle="{StaticResource CellText}" />
+                <DataGridTextColumn Header="Folder" Binding="{Binding Folder}" Width="3*" MinWidth="140" ElementStyle="{StaticResource CellText}" />
+                <DataGridTextColumn Header="Modified" Binding="{Binding Modified, StringFormat=d, TargetNullValue=—}" SortMemberPath="Modified" Width="100" ElementStyle="{StaticResource CellText}" />
+                <DataGridTextColumn Header="Last opened" Binding="{Binding Accessed, StringFormat=d, TargetNullValue=—}" SortMemberPath="Accessed" Width="100" ElementStyle="{StaticResource CellText}" />
             </DataGrid.Columns>
         </DataGrid>
 

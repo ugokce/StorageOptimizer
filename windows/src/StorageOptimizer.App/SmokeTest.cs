@@ -3,8 +3,8 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
 using System.Windows.Threading;
+using StorageOptimizer.App.Infrastructure;
 using StorageOptimizer.App.Services;
 using StorageOptimizer.App.ViewModels;
 
@@ -98,6 +98,12 @@ internal sealed class SmokeTest
             viewModel.SelectedPage = viewModel.Overview;
             await Idle();
             Screenshot(window, "overview-other-theme");
+            // Tables created after a theme change once kept their columns at the minimum width.
+            viewModel.SelectedPage = viewModel.LargeFiles;
+            await Idle();
+            window.UpdateLayout();
+            CheckLayout(window, "Large Files (other theme)");
+            Screenshot(window, "large-files-other-theme");
         }
         catch (Exception exception)
         {
@@ -165,35 +171,57 @@ internal sealed class SmokeTest
         {
             Fail($"{context}: no page content was created");
         }
+
+        if (FindColumnGap(window) is { } gap)
+        {
+            Fail($"{context}: {gap}");
+        }
+    }
+
+    /// <summary>
+    /// Describes a visible table whose columns leave part of its width empty, or returns null. WPF can
+    /// leave star-sized columns at their minimum width. Also used by screenshot mode.
+    /// </summary>
+    internal static string? FindColumnGap(DependencyObject root)
+    {
+        foreach (var grid in Descendants<DataGrid>(root))
+        {
+            if (!grid.IsVisible || grid.Columns.Count == 0)
+            {
+                continue;
+            }
+            var used = grid.Columns.Sum(column => column.ActualWidth);
+            var available = grid.ActualWidth - SystemParameters.VerticalScrollBarWidth - 4;
+            if (used < available * 0.95)
+            {
+                return $"the table's columns use {used:F0} of {grid.ActualWidth:F0} pixels";
+            }
+        }
+        return null;
+    }
+
+    private static IEnumerable<T> Descendants<T>(DependencyObject root) where T : DependencyObject
+    {
+        for (var index = 0; index < VisualTreeHelper.GetChildrenCount(root); index++)
+        {
+            var child = VisualTreeHelper.GetChild(root, index);
+            if (child is T match)
+            {
+                yield return match;
+            }
+            foreach (var descendant in Descendants<T>(child))
+            {
+                yield return descendant;
+            }
+        }
     }
 
     private void Screenshot(Window window, string name)
     {
-        var root = (FrameworkElement)window.Content;
-        var width = (int)Math.Ceiling(root.ActualWidth);
-        var height = (int)Math.Ceiling(root.ActualHeight);
-        if (width <= 0 || height <= 0)
+        if (WindowCapture.RenderContent(window, CategoryPalette.IsDarkTheme()) is { } image)
         {
-            return;
+            WindowCapture.SavePng(image, Path.Join(_outputDirectory, name + ".png"));
         }
-
-        var background = window.Background is SolidColorBrush { Color.A: 255 } solid
-            ? solid
-            : new SolidColorBrush(Infrastructure.CategoryPalette.IsDarkTheme() ? Color.FromRgb(0x20, 0x20, 0x20) : Color.FromRgb(0xF3, 0xF3, 0xF3));
-        var visual = new DrawingVisual();
-        using (var context = visual.RenderOpen())
-        {
-            var bounds = new Rect(0, 0, width, height);
-            context.DrawRectangle(background, null, bounds);
-            context.DrawRectangle(new VisualBrush(root), null, bounds);
-        }
-        var bitmap = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32);
-        bitmap.Render(visual);
-
-        var encoder = new PngBitmapEncoder();
-        encoder.Frames.Add(BitmapFrame.Create(bitmap));
-        using var stream = File.Create(Path.Join(_outputDirectory, name + ".png"));
-        encoder.Save(stream);
     }
 
     /// <summary>A small folder with known contents, including two rebuildable project folders.</summary>
@@ -276,7 +304,8 @@ internal sealed class SmokeTest
         }
     }
 
-    private sealed class SilentDialogs(Action<string> log) : IDialogs
+    /// <summary>Answers every question with No, so nothing is deleted. Also used by screenshot mode.</summary>
+    internal sealed class SilentDialogs(Action<string> log) : IDialogs
     {
         public bool Confirm(string title, string message)
         {

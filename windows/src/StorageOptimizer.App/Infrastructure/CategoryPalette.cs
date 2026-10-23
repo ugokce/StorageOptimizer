@@ -36,12 +36,12 @@ public static class CategoryPalette
 
     public static void Initialize()
     {
-        Apply();
+        UseTheme(IsDarkTheme());
         SystemEvents.UserPreferenceChanged += (_, args) =>
         {
             if (args.Category is UserPreferenceCategory.General or UserPreferenceCategory.Color)
             {
-                Apply();
+                UseTheme(IsDarkTheme());
             }
         };
     }
@@ -52,9 +52,9 @@ public static class CategoryPalette
         return key?.GetValue("AppsUseLightTheme") is int value && value == 0;
     }
 
-    private static void Apply()
+    /// <summary>Switches every brush to the light or dark colors. Screenshot mode uses it to show both themes.</summary>
+    public static void UseTheme(bool dark)
     {
-        var dark = IsDarkTheme();
         foreach (var (category, brush) in Brushes)
         {
             var (light, darkColor) = Colors[category];

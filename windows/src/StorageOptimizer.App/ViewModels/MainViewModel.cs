@@ -143,6 +143,12 @@ public sealed partial class MainViewModel : ObservableObject
         {
             return;
         }
+        await ScanPathAsync(SelectFolderTarget(folder));
+    }
+
+    /// <summary>Adds a folder to the scan targets, unless it's already there, and selects it.</summary>
+    public ScanTargetOption SelectFolderTarget(string folder)
+    {
         var existing = ScanTargets.FirstOrDefault(target => !target.IsDrive && PathText.AreEqual(target.Path, folder));
         if (existing is null)
         {
@@ -150,7 +156,7 @@ public sealed partial class MainViewModel : ObservableObject
             ScanTargets.Add(existing);
         }
         SelectedScanTarget = existing;
-        await ScanPathAsync(existing);
+        return existing;
     }
 
     /// <summary>Scans a target and publishes the result. Also used by the smoke test.</summary>

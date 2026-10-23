@@ -1,38 +1,92 @@
 # Storage Optimizer
 
-A native macOS app that shows where your disk space went and cleans caches safely.
+Native apps for **macOS** and **Windows 11** that show where your disk space went and clean caches safely.
 
-> **Windows 11:** a native Windows version lives in [`windows/`](windows/README.md).
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/macos/overview-dark.png">
+  <img alt="Storage Optimizer on macOS: the Overview page with a disk usage bar by file type, reclaimable caches, and the largest folders and files" src="docs/screenshots/macos/overview-light.png">
+</picture>
+
+| | macOS | Windows 11 |
+|---|---|---|
+| Built with | SwiftUI and Swift Charts | WPF on .NET 10, with the Windows 11 Fluent theme (Mica, light and dark mode) |
+| Runs on | macOS 14 Sonoma or later, Apple silicon and Intel | Windows 11 or Windows 10 (2004 or later), x64 and ARM64 |
+| Download | **macOS** workflow → `StorageOptimizer` artifact | **Windows** workflow → `StorageOptimizer-Windows` artifact |
+| Details | this page | [`windows/README.md`](windows/README.md) |
 
 ## Features
 
-- **Overview**: a disk usage bar like System Settings › Storage, broken down by file type. It also shows how much space caches are using and lists your largest folders and files.
-- **Large Files**: a sortable table of the 2,000 largest files and app bundles.
+- **Overview**: a disk usage bar broken down by file type, like the Storage page in System Settings or Windows Settings. It also shows how much space caches are using and lists your largest folders and files.
+- **Large Files**: a sortable table of the 2,000 largest files.
   - Filter by size (10 MB+ … 1 GB+), by type, by name, or to files not opened in 6 months.
-  - Show items in Finder, open them, copy their paths or move them to the Trash.
+  - Show items in Finder or File Explorer, open them, copy their paths, or move them to the Trash or Recycle Bin.
 - **Folders**: browse the scanned folder tree, sorted by size, with a size bar and percentage per item. Files under 1 MB in each folder are grouped into one row.
 - **File Types**: space per category (Videos, Images, Audio, Documents, Archives, Disk Images, Applications, Developer, Other), with the largest files and file extensions in each.
-- **Cache Cleaner**: finds and measures caches that tools and apps rebuild by themselves, then deletes the ones you select:
-  - Xcode DerivedData, Previews, Device Support files, Simulator caches and unavailable simulators
-  - Swift Package Manager, CocoaPods, Carthage
-  - Homebrew, npm, Yarn, pnpm, Bun, pip, Gradle, Go and Cargo caches
-  - `~/Library/Caches`, `~/Library/Logs` and the Trash
-  - Project build folders found by a scan (`node_modules`, `Pods`, `.build`, `DerivedData`, `target`, virtualenvs, `.next`)
+- **Cache Cleaner**: finds and measures caches that tools and apps rebuild by themselves, then deletes the ones you select.
+  - Developer caches such as Xcode DerivedData on macOS and the Unity cache on Windows
+  - Package manager and browser caches
+  - Project build folders found by a scan, for example `node_modules`, Cargo `target` and Unity `Library`
 
-You can scan your **home folder**, the **entire disk**, or **any folder** you choose.
+You can scan your home or user folder, the entire disk or any drive, or any folder you choose.
 
-## Requirements
+## Screenshots
 
-- macOS 14 Sonoma or later
-- Xcode 16 or later (or the matching Command Line Tools) to build it yourself
+These come from the macOS app, scanning a demo folder. Windows screenshots are in [`windows/README.md`](windows/README.md#screenshots).
 
-## Getting the app
+<table>
+  <tr>
+    <td width="50%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/macos/large-files-dark.png">
+        <img alt="Large Files: a sortable table of the largest files with size, type and last-opened filters" src="docs/screenshots/macos/large-files-light.png">
+      </picture>
+      <p align="center"><b>Large Files</b></p>
+    </td>
+    <td width="50%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/macos/folders-dark.png">
+        <img alt="Folders: the scanned folder tree sorted by size, with size bars and percentages" src="docs/screenshots/macos/folders-light.png">
+      </picture>
+      <p align="center"><b>Folders</b></p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/macos/file-types-dark.png">
+        <img alt="File Types: space per category with the largest files and extensions in each" src="docs/screenshots/macos/file-types-light.png">
+      </picture>
+      <p align="center"><b>File Types</b></p>
+    </td>
+    <td width="50%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/macos/cache-cleaner-dark.png">
+        <img alt="Cache Cleaner: caches grouped by tool with their sizes, ready to clean" src="docs/screenshots/macos/cache-cleaner-light.png">
+      </picture>
+      <p align="center"><b>Cache Cleaner</b></p>
+    </td>
+  </tr>
+</table>
+
+<details>
+<summary>Windows 11</summary>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/windows/overview-dark.png">
+  <img alt="Storage Optimizer on Windows 11: the Overview page in the Fluent theme" src="docs/screenshots/windows/overview-light.png">
+</picture>
+
+</details>
+
+## Getting the macOS app
+
+For Windows, see [`windows/README.md`](windows/README.md#getting-the-app).
 
 ### Download a build
 
-Every push runs the **CI** workflow on GitHub Actions. To download the app:
+Every push that changes the Mac app runs the **macOS** workflow on GitHub Actions. To download the app:
 
-1. Open the latest successful run on the repository's **Actions** tab.
+1. Open the latest successful **macOS** run on the repository's **Actions** tab.
 2. Download the `StorageOptimizer` artifact, unzip it, and move **Storage Optimizer.app** to `/Applications`.
 
 The app is signed ad hoc rather than with a Developer ID, so macOS quarantines it after download. Clear the quarantine once:
@@ -45,9 +99,11 @@ Alternatively, right-click the app, choose **Open**, then confirm in **System Se
 
 ### Build it yourself
 
+You need Xcode 16 or later, or the matching Command Line Tools.
+
 ```sh
-git clone https://github.com/ugokce/MacOsStorageOptimizer.git
-cd MacOsStorageOptimizer
+git clone https://github.com/ugokce/StorageOptimizer.git
+cd StorageOptimizer
 
 swift run StorageOptimizer          # quick start from Terminal
 ./scripts/build_app.sh              # creates "build/Storage Optimizer.app"
@@ -57,7 +113,7 @@ open "build/Storage Optimizer.app"
 - `./scripts/build_app.sh --universal` builds for both Apple silicon and Intel (this needs Xcode).
 - You can also open `Package.swift` in Xcode and run the `StorageOptimizer` scheme.
 
-To run the unit tests:
+To run the tests (core logic, plus layout tests that check no page is pushed under the toolbar in a small window):
 
 ```sh
 swift test
@@ -73,7 +129,17 @@ macOS hides some folders (Mail, Messages, Safari and other apps' containers) unl
 
 A rebuilt app counts as a new app to macOS, so you may need to grant Full Disk Access again after rebuilding.
 
+## What the macOS Cache Cleaner covers
+
+- Xcode DerivedData, Previews, Device Support files, Simulator caches and unavailable simulators
+- Swift Package Manager, CocoaPods, Carthage
+- Homebrew, npm, Yarn, pnpm, Bun, pip, Gradle, Go and Cargo caches
+- `~/Library/Caches`, `~/Library/Logs` and the Trash
+- Project build folders found by a scan: `node_modules`, `Pods`, `.build`, `DerivedData`, `target`, virtualenvs, `.next`
+
 ## How deletion works
+
+Both apps follow the same rules. The Windows specifics are in [`windows/README.md`](windows/README.md#how-deletion-works).
 
 - **Files and folders** you remove from Large Files, Folders or File Types go to the **Trash**, so you can restore them. Their space is freed when you empty the Trash; the Cache Cleaner can do that too.
 - **Caches** are deleted permanently after you confirm, because moving them to the Trash wouldn't free any space.
@@ -101,11 +167,27 @@ Some space this app can't clean:
 ```
 Package.swift
 Sources/StorageCore/        Scanner, statistics, cache catalog, cleaner and deletion guard (Foundation only)
-Sources/StorageOptimizer/   SwiftUI app
-Tests/StorageCoreTests/     Unit tests for StorageCore
+Sources/StorageOptimizer/   SwiftUI app, including the screenshot mode
+Tests/                      Unit tests for StorageCore and layout tests for the app
 scripts/build_app.sh        Builds and signs the .app bundle
-.github/workflows/ci.yml    Builds, tests and packages the app on macOS
+windows/                    The Windows 11 app: a C# port of StorageCore, the WPF app and its tests
+docs/screenshots/           Screenshots used by the READMEs, generated by the Screenshots workflow
+.github/workflows/
+  ci.yml                    macOS: builds, tests and packages the Mac app
+  windows.yml               Windows: tests, publishes x64 and ARM64 builds and runs a smoke test
+  screenshots.yml           Screenshots: takes fresh screenshots of both apps and commits them
 ```
+
+## Updating the screenshots
+
+Run the **Screenshots** workflow from the **Actions** tab (**Run workflow**). On macOS and Windows runners, it first adds a few sparse sample caches (Xcode DerivedData, npm and so on), so the Cache Cleaner shows typical sizes. It then starts each app with `--screenshots <folder>`. In that mode the app does the following:
+
+1. Creates a `Demo` folder of sparse files in the home folder. The files take almost no disk space.
+2. Scans that folder.
+3. Saves every page in light and dark mode.
+4. Deletes the `Demo` folder.
+
+The workflow then commits the images to `docs/screenshots/`. If a `Demo` folder already exists, the run refuses to start rather than touch it.
 
 ## License
 
