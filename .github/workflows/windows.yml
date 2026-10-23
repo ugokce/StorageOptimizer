@@ -47,7 +47,10 @@ jobs:
         env:
           VERSION: ${{ inputs.version }}
         run: |
-          $versionArgs = if ($env:VERSION) { @("-p:Version=$env:VERSION") } else { @() }
+          # Built up one item at a time: an if expression that returns a one-item array gives back a plain
+          # string, which @versionArgs would then pass to dotnet one character at a time.
+          $versionArgs = @()
+          if ($env:VERSION) { $versionArgs += "-p:Version=$env:VERSION" }
           foreach ($rid in 'win-x64', 'win-arm64') {
             dotnet publish src/StorageOptimizer.App -c Release -r $rid --self-contained true @versionArgs `
               -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true `
