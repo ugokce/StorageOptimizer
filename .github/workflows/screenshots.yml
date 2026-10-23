@@ -21,7 +21,7 @@ jobs:
     runs-on: macos-15
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Build app
         run: ./scripts/build_app.sh
@@ -65,7 +65,7 @@ jobs:
 
       - name: Upload screenshots
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: screenshots-macos
           path: screenshots/
@@ -80,9 +80,9 @@ jobs:
         shell: pwsh
         working-directory: windows
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: 10.0.x
 
@@ -126,7 +126,7 @@ jobs:
 
       - name: Upload screenshots
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: screenshots-windows
           path: windows/screenshots/
@@ -140,20 +140,49 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: screenshots-macos
           path: incoming/macos
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: screenshots-windows
           path: incoming/windows
 
-      - name: Install pngquant
-        run: sudo apt-get update -q && sudo apt-get install -y -q pngquant
+      - name: Install pngquant and Pillow
+        run: sudo apt-get update -q && sudo apt-get install -y -q pngquant python3-pil
+
+      # A page that looks the same as the page before it was captured before it had been drawn.
+      - name: Check that every page was captured
+        run: |
+          python3 - <<'EOF'
+          import sys
+          from PIL import Image, ImageChops, ImageStat
+
+          pages = ["overview", "large-files", "folders", "file-types", "cache-cleaner"]
+          problems = []
+          for platform in ["macos", "windows"]:
+              for theme in ["light", "dark"]:
+                  images = []
+                  for page in pages:
+                      path = f"incoming/{platform}/{page}-{theme}.png"
+                      try:
+                          images.append(Image.open(path).convert("L").resize((160, 100)))
+                      except FileNotFoundError:
+                          problems.append(f"{path} is missing")
+                          images.append(None)
+                  for page, previous, current in zip(pages[1:], images, images[1:]):
+                      if previous is not None and current is not None:
+                          difference = ImageStat.Stat(ImageChops.difference(previous, current)).mean[0]
+                          if difference < 2:
+                              problems.append(f"{platform}/{page}-{theme}.png looks the same as the page before it")
+          for problem in problems:
+              print(f"::error::{problem}")
+          sys.exit(1 if problems else 0)
+          EOF
 
       - name: Compress and commit
         run: |

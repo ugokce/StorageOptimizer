@@ -43,6 +43,8 @@ cp "$BIN_DIR/$PRODUCT" "$APP_DIR/Contents/MacOS/$PRODUCT"
 BUILD_NUMBER="$(git rev-list --count HEAD 2>/dev/null || echo 1)"
 sed -e "s/__VERSION__/$VERSION/" -e "s/__BUILD__/$BUILD_NUMBER/" Packaging/Info.plist > "$APP_DIR/Contents/Info.plist"
 printf 'APPL????' > "$APP_DIR/Contents/PkgInfo"
+# Made from Packaging/AppIcon.png by scripts/make_icons.py.
+cp Packaging/AppIcon.icns "$APP_DIR/Contents/Resources/AppIcon.icns"
 
 # Copy SwiftPM resource bundles, if any target ever declares resources.
 find "$BIN_DIR" -maxdepth 1 -name '*.bundle' -exec cp -R {} "$APP_DIR/Contents/Resources/" \;

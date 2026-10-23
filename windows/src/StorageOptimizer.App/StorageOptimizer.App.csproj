@@ -10,7 +10,13 @@
     <RootNamespace>StorageOptimizer.App</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AssemblyTitle>Storage Optimizer</AssemblyTitle>
+    <!-- Made from Packaging/AppIcon.png by scripts/make_icons.py. -->
+    <ApplicationIcon>Assets\AppIcon.ico</ApplicationIcon>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\AppIcon.ico" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />

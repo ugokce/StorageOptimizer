@@ -23,6 +23,7 @@ internal sealed class ScreenshotRunner
     private readonly string _outputDirectory;
     private readonly List<string> _log = [];
     private int _failures;
+    private byte[]? _previousThumbnail;
 
     private ScreenshotRunner(string outputDirectory) => _outputDirectory = outputDirectory;
 
@@ -123,26 +124,44 @@ internal sealed class ScreenshotRunner
                 await Idle();
                 await Task.Delay(700);
                 await Idle();
-                Capture(window, $"{page.Title.Replace(' ', '-').ToLowerInvariant()}-{suffix}", dark);
+                await CaptureAsync(window, $"{page.Title.Replace(' ', '-').ToLowerInvariant()}-{suffix}", dark);
             }
         }
     }
 
     /// <summary>Prefers the window as Windows shows it; falls back to WPF's own rendering of the content.</summary>
-    private void Capture(Window window, string name, bool dark)
+    private async Task CaptureAsync(Window window, string name, bool dark)
     {
         if (SmokeTest.FindColumnGap(window) is { } gap)
         {
             Fail($"{name}: {gap}");
         }
         var path = Path.Join(_outputDirectory, name + ".png");
-        if (WindowCapture.CaptureWindow(window) is { } image)
+        for (var attempt = 1; attempt <= 5; attempt++)
         {
+            if (WindowCapture.CaptureWindow(window) is not { } image)
+            {
+                break;
+            }
+            // PrintWindow returns the window's last drawn frame, which can still show the previous
+            // page while a slow page (such as the Large Files table) is being drawn.
+            var thumbnail = WindowCapture.Thumbnail(image);
+            if (_previousThumbnail is not null && WindowCapture.Difference(thumbnail, _previousThumbnail) < 1)
+            {
+                Log($"{name}: capture {attempt} still showed the previous page");
+                await Task.Delay(1000);
+                await Idle();
+                continue;
+            }
+            _previousThumbnail = thumbnail;
             WindowCapture.SavePng(image, path);
             Log($"{name}: PrintWindow, {image.PixelWidth}x{image.PixelHeight}");
+            return;
         }
-        else if (WindowCapture.RenderContent(window, dark) is { } content)
+
+        if (WindowCapture.RenderContent(window, dark) is { } content)
         {
+            _previousThumbnail = null;
             WindowCapture.SavePng(content, path);
             Log($"{name}: RenderTargetBitmap (PrintWindow gave no usable image), {content.PixelWidth}x{content.PixelHeight}");
         }
