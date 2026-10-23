@@ -53,7 +53,11 @@ struct ContentView: View {
             appState.refreshEnvironment()
         }
         .task {
-            appState.cacheModel.refresh()
+            if let output = ScreenshotRunner.outputDirectoryFromCommandLine() {
+                await ScreenshotRunner(outputDirectory: output, appState: appState).run()
+            } else {
+                appState.cacheModel.refresh()
+            }
         }
     }
 

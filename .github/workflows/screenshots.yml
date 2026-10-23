@@ -1,0 +1,145 @@
+name: Screenshots
+
+# Runs both apps in screenshot mode on a generated demo folder and commits the images to
+# docs/screenshots, where the READMEs show them. Run it from the Actions tab after UI changes.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, "claude/**"]
+    paths: [".github/workflows/screenshots.yml"]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  macos:
+    name: macOS screenshots
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build app
+        run: ./scripts/build_app.sh
+
+      - name: Take screenshots
+        run: |
+          output="$PWD/screenshots"
+          "build/Storage Optimizer.app/Contents/MacOS/StorageOptimizer" --screenshots "$output" &
+          pid=$!
+          for _ in $(seq 1 300); do
+            kill -0 "$pid" 2>/dev/null || break
+            sleep 1
+          done
+          status=0
+          if kill -0 "$pid" 2>/dev/null; then
+            kill "$pid"
+            echo "::error::The screenshot run didn't finish within 5 minutes."
+            status=1
+          else
+            wait "$pid" || status=$?
+          fi
+          cat "$output/screenshots.log" 2>/dev/null || echo "No screenshots.log was written."
+          exit $status
+
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots-macos
+          path: screenshots/
+          if-no-files-found: error
+
+  windows:
+    name: Windows screenshots
+    runs-on: windows-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: pwsh
+        working-directory: windows
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Use a 1920x1080 screen
+        continue-on-error: true
+        run: Set-DisplayResolution -Width 1920 -Height 1080 -Force
+
+      - name: Publish
+        run: |
+          dotnet publish src/StorageOptimizer.App -c Release -r win-x64 --self-contained true `
+            -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -o publish/win-x64
+
+      - name: Take screenshots
+        run: |
+          $output = Join-Path $PWD 'screenshots'
+          $process = Start-Process -FilePath 'publish/win-x64/StorageOptimizer.exe' -ArgumentList '--screenshots', "`"$output`"" -PassThru
+          $null = $process.Handle  # keeps the exit code available after the process ends
+          if (-not $process.WaitForExit(300000)) {
+            $process.Kill()
+            Write-Error 'The screenshot run did not finish within 5 minutes.'
+            exit 1
+          }
+          if (Test-Path "$output/screenshots.log") { Get-Content "$output/screenshots.log" } else { Write-Host 'No screenshots.log was written.' }
+          exit $process.ExitCode
+
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots-windows
+          path: windows/screenshots/
+          if-no-files-found: error
+
+  commit:
+    name: Commit screenshots
+    needs: [macos, windows]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: screenshots-macos
+          path: incoming/macos
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: screenshots-windows
+          path: incoming/windows
+
+      - name: Install pngquant
+        run: sudo apt-get update -q && sudo apt-get install -y -q pngquant
+
+      - name: Compress and commit
+        run: |
+          for platform in macos windows; do
+            rm -rf "docs/screenshots/$platform"
+            mkdir -p "docs/screenshots/$platform"
+            for file in incoming/$platform/*.png; do
+              target="docs/screenshots/$platform/$(basename "$file")"
+              pngquant --quality=70-98 --speed 1 --strip --output "$target" "$file" || cp "$file" "$target"
+            done
+          done
+          ls -l docs/screenshots/*
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A docs/screenshots
+          if git diff --cached --quiet; then
+            echo "The screenshots didn't change."
+            exit 0
+          fi
+          git commit -m "Update product screenshots [skip ci]"
+          git pull --rebase origin "$GITHUB_REF_NAME"
+          git push origin "HEAD:$GITHUB_REF_NAME"

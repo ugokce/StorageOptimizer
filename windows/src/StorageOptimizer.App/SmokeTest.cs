@@ -3,8 +3,8 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
 using System.Windows.Threading;
+using StorageOptimizer.App.Infrastructure;
 using StorageOptimizer.App.Services;
 using StorageOptimizer.App.ViewModels;
 
@@ -169,31 +169,10 @@ internal sealed class SmokeTest
 
     private void Screenshot(Window window, string name)
     {
-        var root = (FrameworkElement)window.Content;
-        var width = (int)Math.Ceiling(root.ActualWidth);
-        var height = (int)Math.Ceiling(root.ActualHeight);
-        if (width <= 0 || height <= 0)
+        if (WindowCapture.RenderContent(window, CategoryPalette.IsDarkTheme()) is { } image)
         {
-            return;
+            WindowCapture.SavePng(image, Path.Join(_outputDirectory, name + ".png"));
         }
-
-        var background = window.Background is SolidColorBrush { Color.A: 255 } solid
-            ? solid
-            : new SolidColorBrush(Infrastructure.CategoryPalette.IsDarkTheme() ? Color.FromRgb(0x20, 0x20, 0x20) : Color.FromRgb(0xF3, 0xF3, 0xF3));
-        var visual = new DrawingVisual();
-        using (var context = visual.RenderOpen())
-        {
-            var bounds = new Rect(0, 0, width, height);
-            context.DrawRectangle(background, null, bounds);
-            context.DrawRectangle(new VisualBrush(root), null, bounds);
-        }
-        var bitmap = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32);
-        bitmap.Render(visual);
-
-        var encoder = new PngBitmapEncoder();
-        encoder.Frames.Add(BitmapFrame.Create(bitmap));
-        using var stream = File.Create(Path.Join(_outputDirectory, name + ".png"));
-        encoder.Save(stream);
     }
 
     /// <summary>A small folder with known contents, including two rebuildable project folders.</summary>
@@ -276,7 +255,8 @@ internal sealed class SmokeTest
         }
     }
 
-    private sealed class SilentDialogs(Action<string> log) : IDialogs
+    /// <summary>Answers every question with No, so nothing is deleted. Also used by screenshot mode.</summary>
+    internal sealed class SilentDialogs(Action<string> log) : IDialogs
     {
         public bool Confirm(string title, string message)
         {

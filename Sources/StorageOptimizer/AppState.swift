@@ -91,6 +91,8 @@ final class AppState {
     let cacheModel: CacheCleanerModel
 
     @ObservationIgnored private var scanTask: Task<Void, Never>?
+    /// Set by screenshot mode (see `ScreenshotRunner`).
+    @ObservationIgnored private var isScreenshotMode = false
 
     init() {
         cacheModel = CacheCleanerModel()
@@ -105,7 +107,14 @@ final class AppState {
     /// Re-reads disk capacity and Full Disk Access status.
     func refreshEnvironment() {
         volume = VolumeInfo.current()
-        hasFullDiskAccess = FullDiskAccess.isGranted()
+        hasFullDiskAccess = isScreenshotMode || FullDiskAccess.isGranted()
+    }
+
+    /// Hides the Full Disk Access banner and counts files at their full length, so the sparse
+    /// files of the screenshot demo folder show realistic sizes.
+    func prepareForScreenshots() {
+        isScreenshotMode = true
+        refreshEnvironment()
     }
 
     // MARK: - Scanning
@@ -113,7 +122,10 @@ final class AppState {
     func startScan() {
         guard !isScanning else { return }
         let target = scanTarget
-        let options = ScanOptions(skipPaths: target == .entireDisk ? ScanOptions.entireDiskSkipPaths : [])
+        let options = ScanOptions(
+            sizeMode: isScreenshotMode ? .logical : .allocated,
+            skipPaths: target == .entireDisk ? ScanOptions.entireDiskSkipPaths : []
+        )
         let scanner = DiskScanner(options: options)
         let tracker = ScanProgress()
 
