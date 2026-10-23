@@ -1,0 +1,114 @@
+<UserControl x:Class="StorageOptimizer.App.Views.FoldersView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:StorageOptimizer.App.ViewModels"
+             mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance Type=vm:FoldersViewModel}">
+    <Grid Margin="20,4,20,16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="1" Text="Scan a folder or drive to browse what takes up space." Style="{StaticResource WrappingSecondaryText}"
+                   Visibility="{Binding HasResult, Converter={StaticResource InverseBoolToVisibility}}" />
+
+        <!-- Breadcrumb -->
+        <DockPanel Grid.Row="0" Margin="0,0,0,10" Visibility="{Binding HasResult, Converter={StaticResource BoolToVisibility}}">
+            <Button DockPanel.Dock="Left" Command="{Binding UpCommand}" ToolTip="Up to the enclosing folder" Padding="8,4"
+                    AutomationProperties.Name="Up">
+                <TextBlock Style="{StaticResource Glyph}" Text="&#xE72B;" FontSize="13" />
+            </Button>
+            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Margin="8,0,0,0">
+                <ItemsControl ItemsSource="{Binding Crumbs}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Orientation="Horizontal" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type vm:Crumb}">
+                            <StackPanel Orientation="Horizontal">
+                                <Button Content="{Binding Title}" Background="Transparent" BorderThickness="0" Padding="6,4"
+                                        Command="{Binding DataContext.NavigateCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                        CommandParameter="{Binding}" />
+                                <TextBlock Style="{StaticResource Glyph}" Text="&#xE76C;" FontSize="10" Margin="2,0"
+                                           Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </DockPanel>
+
+        <ListView x:Name="FolderList" Grid.Row="1" ItemsSource="{Binding Rows}" SelectionMode="Extended"
+                  HorizontalContentAlignment="Stretch" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                  VirtualizingPanel.IsVirtualizing="True" AutomationProperties.Name="Folder contents"
+                  Visibility="{Binding HasResult, Converter={StaticResource BoolToVisibility}}">
+            <ListView.InputBindings>
+                <MouseBinding Gesture="LeftDoubleClick" Command="{Binding OpenCommand}"
+                              CommandParameter="{Binding SelectedItem, ElementName=FolderList}" />
+                <KeyBinding Key="Enter" Command="{Binding OpenCommand}"
+                            CommandParameter="{Binding SelectedItem, ElementName=FolderList}" />
+                <KeyBinding Key="Back" Command="{Binding UpCommand}" />
+                <KeyBinding Key="Delete" Command="{Binding MoveToRecycleBinCommand}"
+                            CommandParameter="{Binding SelectedItems, ElementName=FolderList}" />
+            </ListView.InputBindings>
+            <ListView.ContextMenu>
+                <ContextMenu>
+                    <MenuItem Header="Open"
+                              Command="{Binding PlacementTarget.DataContext.OpenCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                              CommandParameter="{Binding PlacementTarget.SelectedItem, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                    <MenuItem Header="Show in File Explorer"
+                              Command="{Binding PlacementTarget.DataContext.ShowInExplorerCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                              CommandParameter="{Binding PlacementTarget.SelectedItems, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                    <MenuItem Header="Copy path"
+                              Command="{Binding PlacementTarget.DataContext.CopyPathCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                              CommandParameter="{Binding PlacementTarget.SelectedItems, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                    <Separator />
+                    <MenuItem Header="Move to Recycle Bin…"
+                              Command="{Binding PlacementTarget.DataContext.MoveToRecycleBinCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                              CommandParameter="{Binding PlacementTarget.SelectedItems, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                </ContextMenu>
+            </ListView.ContextMenu>
+            <ListView.ItemTemplate>
+                <DataTemplate DataType="{x:Type vm:FolderRow}">
+                    <Grid Margin="0,3">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="28" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="64" />
+                            <ColumnDefinition Width="90" />
+                            <ColumnDefinition Width="20" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Style="{StaticResource Glyph}" Text="{Binding Glyph}" FontSize="15" />
+                        <StackPanel Grid.Column="1" Margin="0,0,12,0">
+                            <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" ToolTip="{Binding Node.Path}" />
+                            <ProgressBar Minimum="0" Maximum="1" Value="{Binding Fraction, Mode=OneWay}" Height="4" Margin="0,4,0,0"
+                                         Foreground="{Binding BarBrush}" IsHitTestVisible="False" />
+                        </StackPanel>
+                        <TextBlock Grid.Column="2" Text="{Binding PercentText}" Style="{StaticResource SecondaryText}"
+                                   HorizontalAlignment="Right" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="3" Text="{Binding SizeText}" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="4" Style="{StaticResource Glyph}" Text="&#xE76C;" FontSize="11" HorizontalAlignment="Right"
+                                   Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                                   Visibility="{Binding CanOpen, Converter={StaticResource BoolToVisibility}}" />
+                    </Grid>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+
+        <DockPanel Grid.Row="2" Margin="0,10,0,0" Visibility="{Binding HasResult, Converter={StaticResource BoolToVisibility}}">
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                <Button Content="Show in File Explorer" Command="{Binding ShowInExplorerCommand}"
+                        CommandParameter="{Binding SelectedItems, ElementName=FolderList}" />
+                <Button Content="Move to Recycle Bin…" Margin="8,0,0,0" Command="{Binding MoveToRecycleBinCommand}"
+                        CommandParameter="{Binding SelectedItems, ElementName=FolderList}" />
+            </StackPanel>
+            <TextBlock Text="{Binding SummaryText}" Style="{StaticResource SecondaryText}" VerticalAlignment="Center" Margin="0,0,12,0" />
+        </DockPanel>
+    </Grid>
+</UserControl>

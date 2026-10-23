@@ -1,0 +1,33 @@
+<UserControl x:Class="StorageOptimizer.App.Views.LargeFilesView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:StorageOptimizer.App.ViewModels"
+             xmlns:views="clr-namespace:StorageOptimizer.App.Views"
+             mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance Type=vm:LargeFilesViewModel}">
+    <Grid Margin="20,4,20,16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Filters wrap onto more rows in narrow windows. -->
+        <WrapPanel Grid.Row="0" Margin="0,0,0,10" Orientation="Horizontal">
+            <ComboBox ItemsSource="{Binding SizeOptions}" SelectedItem="{Binding SelectedSize}" DisplayMemberPath="Title"
+                      Width="160" Margin="0,0,10,6" AutomationProperties.Name="Minimum size" />
+            <ComboBox ItemsSource="{Binding CategoryOptions}" SelectedItem="{Binding SelectedCategory}" DisplayMemberPath="Title"
+                      Width="160" Margin="0,0,10,6" AutomationProperties.Name="File type" />
+            <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged, Delay=250}" Width="240" Margin="0,0,10,6"
+                     ToolTip="Filter by name or folder" AutomationProperties.Name="Filter by name or folder" />
+            <CheckBox Content="Not opened in 6 months" IsChecked="{Binding OnlyNotOpenedRecently}" VerticalAlignment="Center" Margin="0,0,10,6" />
+        </WrapPanel>
+
+        <views:FileListView Grid.Row="1" DataContext="{Binding Files}"
+                            Visibility="{Binding DataContext.HasResult, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVisibility}}" />
+
+        <TextBlock Grid.Row="1" Text="Scan a folder or drive to list its largest files." Style="{StaticResource WrappingSecondaryText}"
+                   Visibility="{Binding HasResult, Converter={StaticResource InverseBoolToVisibility}}" />
+    </Grid>
+</UserControl>

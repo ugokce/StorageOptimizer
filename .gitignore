@@ -5,3 +5,12 @@
 /Packages/
 *.xcodeproj/xcuserdata/
 DerivedData/
+
+# Windows (.NET)
+windows/**/bin/
+windows/**/obj/
+windows/publish/
+windows/smoke/
+windows/*.zip
+*.user
+.vs/

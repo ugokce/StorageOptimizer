@@ -2,6 +2,8 @@
 
 A native macOS app that shows where your disk space went and cleans caches safely.
 
+> **Windows 11:** a native Windows version lives in [`windows/`](windows/README.md).
+
 ## Features
 
 - **Overview**: a disk usage bar like System Settings › Storage, broken down by file type. It also shows how much space caches are using and lists your largest folders and files.
