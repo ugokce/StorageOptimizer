@@ -8,6 +8,8 @@
 	<string>Storage Optimizer</string>
 	<key>CFBundleExecutable</key>
 	<string>StorageOptimizer</string>
+	<key>CFBundleIconFile</key>
+	<string>AppIcon</string>
 	<key>CFBundleIdentifier</key>
 	<string>com.ugokce.StorageOptimizer</string>
 	<key>CFBundleInfoDictionaryVersion</key>
