@@ -131,6 +131,10 @@ internal sealed class ScreenshotRunner
     /// <summary>Prefers the window as Windows shows it; falls back to WPF's own rendering of the content.</summary>
     private void Capture(Window window, string name, bool dark)
     {
+        if (SmokeTest.FindColumnGap(window) is { } gap)
+        {
+            Fail($"{name}: {gap}");
+        }
         var path = Path.Join(_outputDirectory, name + ".png");
         if (WindowCapture.CaptureWindow(window) is { } image)
         {

@@ -98,6 +98,12 @@ internal sealed class SmokeTest
             viewModel.SelectedPage = viewModel.Overview;
             await Idle();
             Screenshot(window, "overview-other-theme");
+            // Tables created after a theme change once kept their columns at the minimum width.
+            viewModel.SelectedPage = viewModel.LargeFiles;
+            await Idle();
+            window.UpdateLayout();
+            CheckLayout(window, "Large Files (other theme)");
+            Screenshot(window, "large-files-other-theme");
         }
         catch (Exception exception)
         {
@@ -164,6 +170,49 @@ internal sealed class SmokeTest
         else
         {
             Fail($"{context}: no page content was created");
+        }
+
+        if (FindColumnGap(window) is { } gap)
+        {
+            Fail($"{context}: {gap}");
+        }
+    }
+
+    /// <summary>
+    /// Describes a visible table whose columns leave part of its width empty, or returns null. WPF can
+    /// leave star-sized columns at their minimum width. Also used by screenshot mode.
+    /// </summary>
+    internal static string? FindColumnGap(DependencyObject root)
+    {
+        foreach (var grid in Descendants<DataGrid>(root))
+        {
+            if (!grid.IsVisible || grid.Columns.Count == 0)
+            {
+                continue;
+            }
+            var used = grid.Columns.Sum(column => column.ActualWidth);
+            var available = grid.ActualWidth - SystemParameters.VerticalScrollBarWidth - 4;
+            if (used < available * 0.95)
+            {
+                return $"the table's columns use {used:F0} of {grid.ActualWidth:F0} pixels";
+            }
+        }
+        return null;
+    }
+
+    private static IEnumerable<T> Descendants<T>(DependencyObject root) where T : DependencyObject
+    {
+        for (var index = 0; index < VisualTreeHelper.GetChildrenCount(root); index++)
+        {
+            var child = VisualTreeHelper.GetChild(root, index);
+            if (child is T match)
+            {
+                yield return match;
+            }
+            foreach (var descendant in Descendants<T>(child))
+            {
+                yield return descendant;
+            }
         }
     }
 
