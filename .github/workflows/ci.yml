@@ -4,13 +4,22 @@ name: macOS
 on:
   push:
     branches: [main, "claude/**"]
-    paths-ignore: ["windows/**", "docs/**", "**/*.md", ".github/workflows/windows.yml", ".github/workflows/screenshots.yml"]
+    paths-ignore: ["windows/**", "docs/**", "**/*.md", ".github/workflows/windows.yml", ".github/workflows/screenshots.yml", ".github/workflows/release.yml"]
   pull_request:
-    paths-ignore: ["windows/**", "docs/**", "**/*.md", ".github/workflows/windows.yml", ".github/workflows/screenshots.yml"]
+    paths-ignore: ["windows/**", "docs/**", "**/*.md", ".github/workflows/windows.yml", ".github/workflows/screenshots.yml", ".github/workflows/release.yml"]
   workflow_dispatch:
+  # The Release workflow builds the app through this workflow.
+  workflow_call:
+    inputs:
+      version:
+        description: Version written into the app, such as 1.2.0. Empty for development builds.
+        type: string
+        default: ""
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  # When called by another workflow, github.workflow is the caller's name, so "macos" keeps the group apart
+  # from the Windows build that the same caller runs.
+  group: ${{ github.workflow }}-macos-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -35,7 +44,9 @@ jobs:
         run: swift test
 
       - name: Package app
-        run: ./scripts/build_app.sh --universal
+        env:
+          VERSION: ${{ inputs.version }}
+        run: ./scripts/build_app.sh --universal ${VERSION:+--version "$VERSION"}
 
       - name: Upload app
         uses: actions/upload-artifact@v4

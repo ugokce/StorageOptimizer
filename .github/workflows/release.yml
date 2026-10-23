@@ -1,0 +1,110 @@
+name: Release
+
+# Builds and tests both apps with the macOS and Windows workflows, then publishes them as a GitHub
+# release. Start it from the Actions tab (Run workflow) with a version such as 1.2.0, which creates
+# the tag v1.2.0, or push a tag such as v1.2.0.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version, such as 1.2.0. The release is tagged v1.2.0.
+        required: true
+        type: string
+      draft:
+        description: Save as a draft, to publish later from the Releases page
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  version:
+    name: Check version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - id: version
+        env:
+          REQUESTED: ${{ inputs.version || github.ref_name }}
+        run: |
+          version="${REQUESTED#v}"
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::A version looks like 1.2.0, not \"$REQUESTED\"."
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+  macos:
+    name: macOS
+    needs: version
+    uses: ./.github/workflows/ci.yml
+    with:
+      version: ${{ needs.version.outputs.version }}
+
+  windows:
+    name: Windows
+    needs: version
+    uses: ./.github/workflows/windows.yml
+    with:
+      version: ${{ needs.version.outputs.version }}
+
+  release:
+    name: Publish release
+    needs: [version, macos, windows]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: StorageOptimizer
+          path: built/macos
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: StorageOptimizer-Windows
+          path: built/windows
+
+      - name: Name the files
+        run: |
+          mkdir assets
+          mv built/macos/StorageOptimizer.zip "assets/StorageOptimizer-$VERSION-macOS.zip"
+          mv built/windows/StorageOptimizer-win-x64.zip "assets/StorageOptimizer-$VERSION-Windows-x64.zip"
+          mv built/windows/StorageOptimizer-win-arm64.zip "assets/StorageOptimizer-$VERSION-Windows-ARM64.zip"
+          (cd assets && sha256sum -- * > SHA256SUMS.txt)
+          ls -l assets
+
+      - name: Publish
+        env:
+          DRAFT: ${{ inputs.draft && '--draft' || '' }}
+        run: |
+          cat > notes.md <<EOF
+          ## Downloads
+
+          | File | For |
+          |---|---|
+          | \`StorageOptimizer-$VERSION-macOS.zip\` | macOS 14 Sonoma or later, Apple silicon and Intel |
+          | \`StorageOptimizer-$VERSION-Windows-x64.zip\` | Windows 11, or Windows 10 version 2004 or later, on Intel and AMD PCs |
+          | \`StorageOptimizer-$VERSION-Windows-ARM64.zip\` | Windows 11 on ARM PCs, such as Snapdragon laptops |
+
+          **macOS:** unzip the file and move **Storage Optimizer.app** to Applications. The app isn't notarized by Apple, so clear the quarantine once in Terminal:
+
+          \`\`\`sh
+          xattr -dr com.apple.quarantine "/Applications/Storage Optimizer.app"
+          \`\`\`
+
+          **Windows:** unzip the file and run \`StorageOptimizer.exe\`; there's nothing to install. The app isn't code-signed, so SmartScreen asks first: choose **More info → Run anyway**.
+
+          \`SHA256SUMS.txt\` lists the checksum of each file.
+          EOF
+          gh release create "v$VERSION" assets/* --target "$GITHUB_SHA" --title "Storage Optimizer $VERSION" \
+            --notes-file notes.md --generate-notes $DRAFT
