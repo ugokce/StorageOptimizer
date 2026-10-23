@@ -100,6 +100,31 @@ internal static class WindowCapture
         encoder.Save(stream);
     }
 
+    /// <summary>A 64x40 grayscale miniature of an image, for telling whether two captures show the same thing.</summary>
+    public static byte[] Thumbnail(BitmapSource image)
+    {
+        const int Columns = 64;
+        const int Rows = 40;
+        var thumbnail = new byte[Columns * Rows];
+        var pixel = new byte[4];
+        var bgr = new FormatConvertedBitmap(image, PixelFormats.Bgr32, null, 0);
+        for (var row = 0; row < Rows; row++)
+        {
+            for (var column = 0; column < Columns; column++)
+            {
+                var x = bgr.PixelWidth * (2 * column + 1) / (2 * Columns);
+                var y = bgr.PixelHeight * (2 * row + 1) / (2 * Rows);
+                bgr.CopyPixels(new Int32Rect(x, y, 1, 1), pixel, 4, 0);
+                thumbnail[row * Columns + column] = (byte)((pixel[0] + pixel[1] + pixel[2]) / 3);
+            }
+        }
+        return thumbnail;
+    }
+
+    /// <summary>The mean difference between two thumbnails, from 0 (identical) to 255.</summary>
+    public static double Difference(byte[] first, byte[] second) =>
+        first.Zip(second, (a, b) => Math.Abs(a - b)).Average();
+
     /// <summary>
     /// Whether an image shows real content. A failed capture is black or one flat color; a real page
     /// can be mostly one background color, so only those two cases are rejected.
